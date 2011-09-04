@@ -1,3 +1,6 @@
 This is a collection of syntax, code snippets, quick ideas and every misc thing about go programming language.
 
-
+install
+=======
+1) you need to install goclipse
+2) create a go project in eclipse with existing source
