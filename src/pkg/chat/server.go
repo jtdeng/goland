@@ -14,16 +14,20 @@ type Server struct {
     broadcaster chan []byte
     receiver    chan []byte
     exp         *netchan.Exporter
+    clients		map[string]net.Conn
 }
 
 func (s *Server) Serve (addr string) {
     //goroutine for tcp serve
-    netlisten, err := net.Listen("tcp", addr)
-    defer netlisten.Close()
-    
+    listener, err := net.Listen("tcp", addr)
+    //defer netlisten.Close()
     if err != nil {log.Fatal(err)}
-    go s.exp.Serve(netlisten)
     
+    conn, err := listener.Accept()
+    s.clients[conn.RemoteAddr().String()] = conn
+    go s.exp.ServeConn(conn)
+    
+   
     for {
 	    select {
 	        case  msg := <-s.receiver:
@@ -32,6 +36,9 @@ func (s *Server) Serve (addr string) {
 	            //s.exp.Drain(1e9)
 	    } 
     }    
+
+    
+    
 }
 
 func NewServer(name string) (*Server) {
