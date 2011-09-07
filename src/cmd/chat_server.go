@@ -16,11 +16,12 @@ import (
 // flag for debuging info. or a simple log
 var debug = flag.Bool("d", false, "set the debug modus( print informations )")
 
+//A client representation in server side
 type ClientChat struct {
     Name string        // name of user
-    IN chan string     // input channel for to send to user
-    OUT chan string    // input channel from user to all
-    Con *net.Conn      // connection of client
+    IN chan string     // channel for incoming msg of this client
+    OUT chan string    // channel for msg from this client out to all
+    Con *net.Conn      // connection of client to server
     Quit chan bool     // quit channel for all goroutines
     ListChain *list.List    // reference to list
 }
@@ -28,6 +29,8 @@ type ClientChat struct {
 // read from connection and return true if ok
 func (c *ClientChat) Read(buf []byte) bool{ 
     nr, err := (*c.Con).Read(buf)
+    //nr,err := c.Con.Read(buf)
+    
     if err!=nil {
         c.Close()
         return false
@@ -39,7 +42,8 @@ func (c *ClientChat) Read(buf []byte) bool{
 // close the connection and send quit to sender
 func (c *ClientChat) Close() {
     c.Quit<-true
-    (*c.Con).Close()
+    tmp := c.Con//.Close()
+    (*tmp).Close()
     c.deleteFromList()
 }
 
