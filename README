@@ -3,4 +3,5 @@ This is a collection of syntax, code snippets, quick ideas and every misc thing 
 install
 =======
 1) you need to install goclipse
-2) create a go project in eclipse with existing source
+2) create a go project in eclipse from existing source
+3) modify and enjoy! 
