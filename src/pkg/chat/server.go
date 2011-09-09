@@ -1,5 +1,11 @@
 // Copyright 2011 James Deng.  All rights reserved.
 // This is a demo of go channels and network channels
+// 
+// chat server can host multiple clients by assigning a unique ticket
+// to each client and exporting communication channels base on this ticket. 
+// client ask for ticket via ticket channel first, then communicate with
+// server on channels base on ticket name.
+
 package chat
 
 import (

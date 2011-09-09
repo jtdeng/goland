@@ -5,3 +5,11 @@ install
 1) you need to install goclipse
 2) create a go project in eclipse from existing source
 3) modify and enjoy! 
+
+
+Internet Resources
+==================
+1) RPC with go netchan 
+    http://rogpeppe.wordpress.com/2011/02/10/bidirectional-rpc-with-netchan/
+2) Go network programming ebook 
+    http://jan.newmarch.name/go
