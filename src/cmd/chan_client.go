@@ -7,6 +7,7 @@ import (
     "bufio"
     "os"
     "bytes"
+    "flag"
 )
 
 func keyboard_listener(kb chan []byte) {
@@ -22,8 +23,11 @@ func keyboard_listener(kb chan []byte) {
 }
 
 
+var client_name = flag.String("n", "Client", "Client name")
+
 func main() {
-    in, out := chat.NewClient("James", "localhost:9988")
+	flag.Parse()
+    in, out := chat.NewClient(*client_name, "localhost:9988")
     
     kb := make(chan []byte)
     go keyboard_listener(kb)

@@ -6,15 +6,8 @@ import (
     //"fmt"
     "log"
     "netchan"
+    "strconv"
 )
-
-
-type Client struct {
-    name    string  //name of the client
-    input   chan<-  string //channel for client to send msg
-    output  <-chan  string //channel for client to recv msg
-    
-}
 
 
 //NewClient connects to the server and returns 2 channels for communication 
@@ -29,13 +22,25 @@ func NewClient(name, server string) (input chan<- []byte, output <-chan []byte) 
     imp, err := netchan.Import("tcp", server)
     if err != nil { log.Fatal(err) }
     
-    out := make(chan []byte)
-    err = imp.Import("broadcaster", out, netchan.Recv, 1)
+    req := make(chan []byte)
+    err = imp.Import("t-req", req, netchan.Send, 1)
     if err != nil { log.Fatal(err) }
         
-    in := make(chan []byte)
-    err = imp.Import("receiver", in, netchan.Send, 1)
+    res := make(chan int64)
+    err = imp.Import("t-res", res, netchan.Recv, 1)
     if err != nil { log.Fatal(err) }
     
+    req <- []byte(name)
+    ticket := <-res
+    
+    log.Println("Got ticket:", ticket)
+    //imp.Hangup("t-req")
+    //imp.Hangup("t-res")
+    //close(req) //ticket has been closed by Hangup?
+    //close(res)
+    
+    in, out := make(chan []byte), make(chan []byte)
+    imp.Import("recv-"+strconv.Itoa64(ticket), out, netchan.Send, 1)
+    imp.Import("send-"+strconv.Itoa64(ticket), in, netchan.Recv, 1)
     return in, out
 }
