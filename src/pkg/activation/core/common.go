@@ -1,2 +1,2 @@
-package activation
+package core
 
