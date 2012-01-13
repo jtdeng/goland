@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"net"
 	"log"
+	"runtime"
+	//"url"
 )
 
 
@@ -25,13 +27,14 @@ type ResourceHanlder interface {
 	Delete()	//map to 'DELETE'
 }
 
+//url router, routes url to registered resource handlers
 type router struct {
 	p       string
     cp      *regexp.Regexp
     handler ResourceHanlder
 }
 
-//add a router to routers list
+//add a url router to routers list
 func (pe *ProvisioningEngine) AddRouter(pattern string, handler ResourceHanlder) {
 	cp, err := regexp.Compile(pattern)
 	if err != nil {
@@ -43,12 +46,22 @@ func (pe *ProvisioningEngine) AddRouter(pattern string, handler ResourceHanlder)
 }
 
 func (pe *ProvisioningEngine) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-
+    //TODO: set content type according to resource format json or xml
+    resp.Header().Set("Content-Type", "application/json; charset=utf-8")
+    
+    //URL should be like /Feature/ResourceName/ResourceId&format=[xml|json]
+    //feature := req.URL.Path.Split()
+    fmt.Println(req.URL.Path)
+    
+    for i:=0; i< pe.Routers.Len(); i++ {
+        
+    }
 }
 
 type Configuration map[string]string
+
 func (pe *ProvisioningEngine) Initialize(cfg Configuration){
-	//read config file and initialize PE
+	//read from config file and initialize PE
 }
 
 
@@ -90,6 +103,11 @@ func (hlr *HLRSubscriberHandler) Get() {
 }
 
 func (hlr *HLRSubscriberHandler) Set() {
+}
+
+func init(){
+    runtime.GOMAXPROCS(4)
+    //TODO: load config from file
 }
 
 func main() {

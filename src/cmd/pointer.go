@@ -38,6 +38,12 @@ func (p Point) Area2() int {
 	return area
 }
 
+type Header map[string]string 
+
+func (h Header) Append(key, val string) {
+    h[key] = val, true
+}
+
 
 func main() {
 	var pp = &Point{3,2,&Inner{7}, new(Printable)}
@@ -51,6 +57,13 @@ func main() {
 	//you can not reference the method in Printable interface like below
 	//pp.p.PrintIt()
 	//seems that you can not use the pointer indirect (*p).method() ---->  p.method(), if method is from the interface
-	(*pp.p).PrintIt() // will fail because you are calling a nil instance
+	
+	//(*pp.p).PrintIt() // will fail because you are calling a nil instance
 
+
+    var h = Header{}
+    //or var h = make(Header)
+    
+    h.Append("James", "Deng")
+    fmt.Println(h)
 }
