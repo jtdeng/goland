@@ -1,3 +1,10 @@
+// Copyright 2012 James Deng. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// an experimental RESTful/HTTP provisioning server.
+//
+
 package main
 
 import (
@@ -16,7 +23,7 @@ type ProvisioningEngine struct {
 }
 
 //every resource should be able to handle the 4 operations
-type ResourceHanlder interface {
+type ResourceHandler interface {
 	Create() //map to 'PUT'
 	Set()    //map to 'POST'
 	Get()    //map to 'GET'
@@ -27,23 +34,32 @@ type ResourceHanlder interface {
 type router struct {
 	p       string
 	cp      *regexp.Regexp
-	handler ResourceHanlder
+	handler ResourceHandler
 }
 
 //add a url router to routers list
-func (pe *ProvisioningEngine) AddRouter(pattern string, handler ResourceHanlder) {
+func (pe *ProvisioningEngine) AddRouter(pattern string, handler ResourceHandler) {
 	cp, err := regexp.Compile(pattern)
 	if err != nil {
 		fmt.Printf("Invalid URL pattern: %q\n", pattern)
 		return
 	}
-
-	//pe.Routers.Push(router{pattern, cp, handler})
-	//pe.Routers[len(pe.Routers)] = router{pattern, cp, handler}
     pe.Routers = append(pe.Routers, router{pattern, cp, handler})
 }
 
-func (pe *ProvisioningEngine) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+//lookup the handler with given url string
+func (pe *ProvisioningEngine) LookupHandler(url string) ResourceHandler {
+    for _, r := range pe.Routers {
+        if r.cp.MatchString(url) {
+            fmt.Println("Handler found for: ", r.p)
+            return r.handler
+        }
+	}
+	return nil 
+}
+
+func (pe *ProvisioningEngine) ServeHTTP(resp http.ResponseWriter, 
+                                        req *http.Request) {
 	//TODO: set content type according to resource format json or xml
 	resp.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -51,23 +67,28 @@ func (pe *ProvisioningEngine) ServeHTTP(resp http.ResponseWriter, req *http.Requ
 	//feature := req.URL.Path.Split()
 	fmt.Println(req.URL.Path)
 
-	for i := 0; i < len(pe.Routers); i++ {
-        fmt.Println(pe.Routers[i].p)
+	for _, r := range pe.Routers {
+        fmt.Println(r.p)
 	}
 	
-	_handler :=  pe.GetHandler()
+	//lookup the handler for the incoming request
+	_handler :=  pe.LookupHandler(req.URL.Path)
+	if _handler == nil {
+	   http.NotFound(resp, req)
+	   return
+	}
 	
 	switch _method := req.Method; _method {
 	case "GET": 
-        //call the Get() method of the handler object	
+        _handler.Get()
 	case "PUT":
-	
+	    _handler.Create()
 	case "DELETE":
-	
+	    _handler.Delete()
 	case "POST":
-	
+	    _handler.Set()
 	default:
-	   
+	    http.NotFound(resp, req)
 	}
 	
 }
@@ -104,15 +125,19 @@ type HLRSubscriberHandler struct {
 }
 
 func (hlr *HLRSubscriberHandler) Create() {
+    fmt.Println("HLRSubscriberHandler created")
 }
 
 func (hlr *HLRSubscriberHandler) Delete() {
+    fmt.Println("HLRSubscriberHandler deleted")
 }
 
 func (hlr *HLRSubscriberHandler) Get() {
+    fmt.Println("HLRSubscriberHandler got")
 }
 
 func (hlr *HLRSubscriberHandler) Set() {
+    fmt.Println("HLRSubscriberHandler set")
 }
 
 func init() {
