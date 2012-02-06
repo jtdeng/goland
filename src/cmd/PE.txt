@@ -1,4 +1,0 @@
-1.HTTP based RESTful interface
-2.
-3.Resource Oriented, Everything is a resource including configuration, so that everything is operable via HTTP interface
-4.Authentication and per resource Authorization
