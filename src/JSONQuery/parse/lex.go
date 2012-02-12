@@ -253,7 +253,7 @@ func lexChild(l *lexer) stateFn {
 			break
 		}
     }
-
+	l.emit(itemChild)
 	return lexRoot
 
 }
@@ -264,14 +264,27 @@ func lexRecursiveChild(l *lexer) stateFn {
 	if r != ".." {
 		return l.errorf("Expecting .., but got ")
 	} 
+    
+	for {
+		if r := l.next(); ! isAlphaNumeric(r) {
+			l.backup()
+			break
+		}
+	}
 
+	l.emit(itemRecursiveChild)
 
+	return lexRoot
 
 }
 
+func lexIndex(l *lexer) stateFn {
 
+}
 
+func lexFilter(l *lexer) stateFn {
 
+}
 
 
 
