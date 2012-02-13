@@ -24,10 +24,6 @@ func (i item) String() string {
 		return "EOF"
 	case i.typ == itemError:
 		return i.val
-	case i.typ > itemKeyword:
-		return fmt.Sprintf("<%s>", i.val)
-	case len(i.val) > 10:
-		return fmt.Sprintf("%.10q...", i.val)
 	}
 	return fmt.Sprintf("%q", i.val)
 }
@@ -47,50 +43,44 @@ type itemType int
 const (
 	itemError        itemType = iota // error occurred; value is text of error
 	itemRoot           //$
-	itemChild          // alphanumeric identifier, starting with '.', possibly chained ('.x.y')
-	itemIdentifier     // alphanumeric identifier
-	itemDot             // the cursor, spelled '.'.
-    itemDotDot          //deep search ..
-    itemWildcard        // *
-    itemAt          //@
-    itemNumber     // simple number
-	itemString     // quoted string (includes quotes)
-    itemLBracket    // [
-    itemRBracket // ]
-    itemLParentheses // (
-    itemRParentheses // )
-    itemLess        // <
-    itemGreat       // >
-    itemMinus       // -
-    itemPlus        // +
-    itemEqual       //==
-    itemEval        //=
-    itemQuestion    // ?        
+	itemChild          // .store
+	itemRecursiveChild	// ..book
+	itemNumber     // valid number for index 
+	itemWildcard        // *
+    itemCurrent          //@
+    itemString     // quoted string (includes quotes)
+    itemIndex		//[2]
+	//itemLBracket    // [
+    //itemRBracket // ]
+    //itemLParentheses // (
+    //itemRParentheses // )
+    //itemLess        // <
+    //itemGreat       // >
+    //itemMinus       // -
+    //itemPlus        // +
+    //itemEqual       //==
+    //itemEval        //=
+    //itemQuestion    // ?        
 	itemEOF
-	itemKeyword    // just a separator
-	itemProperty   //all all property of current object
-	itemLength     //length of current object,
+	//itemKeyword    // just a separator
+	//itemProperty   //all all property of current object
+	//itemLength     //length of current object,
 )
 
 // Make the types prettyprint.
 var itemName = map[itemType]string{
 	itemError:        "error",
-	itemChar:         "char",
-	itemCharConstant: "charconst",
+	//itemChar:         "char",
+	//itemCharConstant: "charconst",
 	itemEOF:          "EOF",
-	itemField:        "field",
-	itemIdentifier:   "identifier",
-	itemLeftDelim:    "left delim",
+	itemRoot:			"$",
+	itemChild:        "child",
+	itemRecursiveChild:   "..child",
+	itemIndex:			"index",
 	itemNumber:       "number",
-	itemPipe:         "pipe",
-	itemRawString:    "raw string",
-	itemRightDelim:   "right delim",
 	itemString:       "string",
-	itemVariable:     "variable",
-	// keywords
-	itemDot:      "length",
-	itemDefine:   "property"
 }
+
 
 func (i itemType) String() string {
 	s := itemName[i]
@@ -197,17 +187,18 @@ func (l *lexer) nextItem() item {
 //trim the leading & trailing white spaces, smartly add the $ to input JSONQuery string 
 func preprocess(i string) string {
     o := strings.TrimSpace(i)
-    if strings.HasPrefix
     switch c := o[0]; {
-        case c == '.' || c == '[':
-            return '$' + o
-        default:
-            return '$.' + o
+		case c == '$':
+			return o
+		case c == '.' || c == '[': //.store or ['store'] or [2]
+            return "$" + o
     }
+
+	return "$." + o
 }
 
 // lex creates a new scanner for the input string.
-func lex(name, input, left, right string) *lexer {
+func lex(name, input string) *lexer {
 		l := &lexer{
 		name:       name,
 		input:      preprocess(input),
@@ -221,30 +212,41 @@ func lex(name, input, left, right string) *lexer {
 
 // lex always start from Root $, if $ is not found, add it
 func lexRoot(l *lexer) stateFn {
-    
-	if l.input[l.pos] == '$' {	
-		l.pos += len("$")
-    	l.emit(itemRoot)
+
+	if r := l.next(); r == '$' {
+		//fmt.Println(l.input[l.pos:])
+		l.emit(itemRoot)
+	} else if r == eof {
+		l.emit(itemEOF)
+		//fmt.Println("Got EOF...")
+		return nil
+	} else {
+		l.backup()
 	}
 
     if strings.HasPrefix(l.input[l.pos:], "['") {
-	return lexQuoteChild
+		return lexQuoteChild
     } else if strings.HasPrefix(l.input[l.pos:], "[") {
         return lexIndex
     } else if strings.HasPrefix(l.input[l.pos:], "..") {
-	return lexRecursiveChild
+		return lexRecursiveChild
     } else if strings.HasPrefix(l.input[l.pos:], ".") {
         return lexChild
     } else {
-        return l.errorf("Unexpected character following root")
+		fmt.Println(l.input[l.pos:])
+		return l.errorf("Unexpected character following root")
     }
+
+	return lexRoot
 }
 
 //lex a direct child field
 func lexChild(l *lexer) stateFn {
     if r := l.next(); r != '.' {
-	return l.errorf("I should be indexing child, but got %s", r)
-    }
+		return l.errorf("I should be indexing child, but got %s", r)
+    } else {
+		l.ignore() // we don't need the dot in our token value
+	}
 
     //absorb the identifier
     for {
@@ -258,13 +260,21 @@ func lexChild(l *lexer) stateFn {
 
 }
 
+func lexQuoteChild(l *lexer) stateFn {
+	return nil
+}
+
 
 func lexRecursiveChild(l *lexer) stateFn {
 	r := l.input[l.pos:l.pos+2]
 	if r != ".." {
 		return l.errorf("Expecting .., but got ")
-	} 
-    
+	} else {
+		_ = l.next()
+		_ = l.next()
+		l.ignore()
+	}
+
 	for {
 		if r := l.next(); ! isAlphaNumeric(r) {
 			l.backup()
@@ -278,12 +288,25 @@ func lexRecursiveChild(l *lexer) stateFn {
 
 }
 
+//Now it's like [numbers]
 func lexIndex(l *lexer) stateFn {
+	l.next()
+	l.ignore() //absort and ignore '['
 
+	for {
+		if l.next(); l.input[l.pos] == ']' {
+			l.emit(itemIndex)
+			l.next()
+			l.ignore() //absorb and ignore ']'
+			break
+		}
+	}
+
+	return lexRoot
 }
 
 func lexFilter(l *lexer) stateFn {
-
+	return nil
 }
 
 
