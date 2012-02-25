@@ -25,6 +25,13 @@ var lexTests = []lexTest{
 		{itemChild, "title"},
 		{itemEOF, ""},
 	}},
+	{"Test 2", "$..book[2].title", []item{
+		{itemRoot, "$"},
+		{itemRecursiveChild, "book"},
+		{itemIndex, "2"},
+		{itemChild, "title"},
+		{itemEOF,""},
+	}},
 }
 
 // collect gathers the emitted items into a slice.

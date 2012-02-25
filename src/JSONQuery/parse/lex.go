@@ -268,7 +268,7 @@ func lexQuoteChild(l *lexer) stateFn {
 func lexRecursiveChild(l *lexer) stateFn {
 	r := l.input[l.pos:l.pos+2]
 	if r != ".." {
-		return l.errorf("Expecting .., but got ")
+		return l.errorf("Expecting .., but got %s", r)
 	} else {
 		_ = l.next()
 		_ = l.next()
